@@ -131,7 +131,7 @@ def get_color(obj, M):
 def filterShadow(a,b):
     return a < b
 
-def trace(O, ray):
+def trace(O, ray, rec=False, nbrec=0):
     t = np.inf
     for i, obj in enumerate(scene):
         t_obj = intersect(ray, O, obj)
@@ -172,10 +172,27 @@ def trace(O, ray):
     # Blinn-Phong (specular).
     col += obj.get('specular_c', specular_c) * abs(np.dot(N, normalize(toLight + toOrigin))) ** specular_k * color_light
 
+    for i in range(0,1):
+        if obj.get('reflection', 0.) > 0. and rec and nbrec < 6:
+            #print(nbrec % 2)
+            #print(nbrec)
+            if nbrec % 2 == 1:
+                refRay = normalize(-ray + 2 * np.dot(ray, N) * N)
+                refTr = trace(M - 0.001*N,refRay,False,nbrec)
+            else:
+                refRay = normalize(ray - 2 * np.dot(ray, N) * N)
+                refTr = trace(M + 0.001*N,refRay,False,nbrec)
+            #refTr = trace(M + 0.001*N,refRay,True,nbrec+1)
+            if not refTr:
+                break
+            objr, Mr, Nr, col_r, tranR = refTr
+            col += col_r*obj.get('reflection', 0.)
+
     if trans > 0.:
-        tr = trace(M + 0.001*ray,ray)
+        tr = trace(M + 0.001*ray,ray,True,nbrec+1)
         objt, Mt, Nt, col_ray, trans_r = tr
-        col += np.clip(col_ray, 0, 1)*trans
+        #col += np.clip(col_ray, 0, 1)*trans
+        col += col_ray*trans
     return obj, M, N, (col * np.sqrt(np.sqrt(shadow_mod))), trans
 
 
@@ -185,10 +202,12 @@ def trace(O, ray):
 #color_plane = np.array([0.7, 0.01, 0.02])
 color_plane = np.array([0.05, 0.01, 0.4])
 color_red = np.array([1., 0.01, 0.01])
+color_orange = np.array([0.88, 0.43, 0.08])
 color_blue = np.array([0., 0.00, 1.])
 color_green = np.array([0.1, 0.95, 0.1])
 color_yellow = np.array([1, 0.9, 0.1])
 color_black = np.array([0., 0., 0.])
+color_white = np.array([1., 1., 1.])
 
 
 Light = np.array([7.5, 4., -5.])
@@ -210,7 +229,11 @@ scene.append(sphere([0.5, 3, 2.], .5, color_red))
 scene.append(sphere([1, 6.0, 1.5], 1., color_green, 0.85, 0.99))
 scene.append(sphere([1.5, 3.5, 3.0], 1.2, color_yellow, 0.85, 0.5))
 scene.append(sphere([2.2, 4.8, 2.0], 0.6, color_blue))
-scene.append(sphere([2.5, 8.0, 10.5], 2.5, color_black, 1.))
+scene.append(sphere([2.5, 8.0, 2.5], 2.5, color_white, 0.25, 1.))
+scene.append(sphere([4.5, 2.5, 2.5], .7, color_orange))
+scene.append(sphere([3.5, 5, 8.5], 3.5, color_black, 1., 0.))
+scene.append(sphere([1.0, 9, 8.0], 1.0, color_yellow, 0.5, 0.))
+
 #scene.append(square([4,4,5], [0,0,1], 3., color_red))
 
 # Ne fonctionne pas (mauvais calcul des faces)
@@ -221,15 +244,16 @@ scene.append(sphere([2.5, 8.0, 10.5], 2.5, color_black, 1.))
 Screen = [8,12]
 Camera = np.array([Screen[0]/2,Screen[1]/2,-28])
 
-depth_max = 5 # Profondeur max de réflexion
+depth_max = 3 # Profondeur max de réflexion
 
-w = 400
+w = 200
 h = w*3//4
 
 img = np.zeros((h, w, 3))
 
 
 for i in range(h):
+    print(100*i//h,"%")
     for j in range(w):
         x = Screen[0]*i/h
         y = Screen[1]*j/w
@@ -252,6 +276,8 @@ for i in range(h):
             ray = normalize(ray - 2 * np.dot(ray, N) * N)
             O = M + N * .0001
             reflection *= obj.get('reflection', 1.)
+            if reflection == 0.:
+                break
 
         #col += trace(ray)
         #print(col)
@@ -280,6 +306,6 @@ for i in range(h):
 #        img[h-i-1, j, :] = [0,0,0]
 
 
-#plt.imsave('fig.png', img)
+plt.imsave('fig.png', img)
 plt.imshow(img)
 plt.show()
