@@ -64,21 +64,21 @@ def intersect_cube(l, l0, obj):
 
     
 
-def sphere(position, radius, color, reflection=.0):
+def sphere(position, radius, color, reflection=.0, transparent=.0):
     return dict(type='sphere', position=np.array(position), 
         radius=np.array(radius),
-        color=np.array(color), diffuse_c=.75, specular_c=.5, reflection=reflection)
+        color=np.array(color), diffuse_c=.75, specular_c=.5, reflection=reflection, transparent=min(0.99,transparent))
 
 def plane(position, normal, color, reflection=.0):
     return dict(type='plane', position=np.array(position), 
         normal=np.array(normal),
-        color=color, diffuse_c=.75, specular_c=.2, reflection=reflection)
+        color=color, diffuse_c=.75, specular_c=.2, reflection=reflection, transparent=0.)
 
 def square(position, normal, length, color):
     return dict(type='square', position=np.array(position), 
         length=length,
         normal=np.array(normal),
-        color=np.array(color), diffuse_c=.75, specular_c=.3, reflection=.0)
+        color=np.array(color), diffuse_c=.75, specular_c=.3, reflection=.0, transparent=0.)
 
 
 def cube(position, normal_1, normal_2, length, color):
@@ -94,7 +94,7 @@ def cube(position, normal_1, normal_2, length, color):
             square(np.array(position) + length*np.array(normal_2)/2, [-x for x in normal_2], length, color),
             square(np.array(position) - length*np.array(n3)/2, n3, length, color),
             square(np.array(position) + length*np.array(n3)/2, [-x for x in n3], length, color)],
-        color=np.array(color), diffuse_c=.75, specular_c=.3, reflection=.0)
+        color=np.array(color), diffuse_c=.75, specular_c=.3, reflection=0., transparent=0.)
 
 
 
@@ -151,7 +151,7 @@ def trace(O, ray):
     toOrigin = normalize(O - M)
 
     shadow_mod = 1
-    l = [intersect(toLight, M + N * .0001, obj_shadow) 
+    l = [intersect(toLight, M + N * .0001, obj_shadow)*(1+np.sqrt(obj_shadow['transparent'])) 
             for k, obj_shadow in enumerate(scene) if k != obj_id]
     shadowList = list(map(abs,l))
     LightShadow = np.linalg.norm(Light - M)
@@ -164,14 +164,19 @@ def trace(O, ray):
         #shadow_mod = min(list(map(abs,l)))/np.linalg.norm(Light - M)
         #print(shadow_mod)
     # Calcul des couleurs
-    col = ambient
+    trans = obj['transparent']*np.sqrt(abs(np.dot(N, ray)))
+    col = ambient * (1-trans)
     # Lambert (diffuse).
-    col += obj.get('diffuse_c', diffuse_c) * abs(np.dot(N, toLight)) * color
+    col += obj.get('diffuse_c', diffuse_c) * abs(np.dot(N, toLight)) * color * (1-trans)
 
     # Blinn-Phong (specular).
     col += obj.get('specular_c', specular_c) * abs(np.dot(N, normalize(toLight + toOrigin))) ** specular_k * color_light
 
-    return obj, M, N, (col * np.sqrt(np.sqrt(shadow_mod))), shadow_mod
+    if trans > 0.:
+        tr = trace(M + 0.001*ray,ray)
+        objt, Mt, Nt, col_ray, trans_r = tr
+        col += np.clip(col_ray, 0, 1)*trans
+    return obj, M, N, (col * np.sqrt(np.sqrt(shadow_mod))), trans
 
 
 
@@ -195,17 +200,17 @@ specular_c = 1.
 specular_k = 50
 
 scene = []
-scene.append(plane([0,0,10], [0,0,1], color_black, 0.0))
-scene.append(plane([0,0,-30], [0,0,-1], color_plane, 0.0))
+scene.append(plane([0,0,20], [0,0,1], color_black, 0.0))
+scene.append(plane([0,0,-0], [0,0,-1], color_plane, 0.0))
 scene.append(plane([0,12,0], [0,1,0], color_plane, 0.0))
 scene.append(plane([0,0,10], [0,-1,0], color_plane, 0.0))
 scene.append(plane([8,0,10], [1,0,0], color_plane))
 scene.append(plane([0,0,10], [-1,0,0], color_plane))
 scene.append(sphere([0.5, 3, 2.], .5, color_red))
-scene.append(sphere([1, 6.0, 1.5], 1., color_green))
-scene.append(sphere([1.5, 3.5, 3.0], 1.2, color_yellow))
+scene.append(sphere([1, 6.0, 1.5], 1., color_green, 0.85, 0.99))
+scene.append(sphere([1.5, 3.5, 3.0], 1.2, color_yellow, 0.85, 0.5))
 scene.append(sphere([2.2, 4.8, 2.0], 0.6, color_blue))
-scene.append(sphere([2, 9.0, 2.5], 2, color_black, 1.))
+scene.append(sphere([2.5, 8.0, 10.5], 2.5, color_black, 1.))
 #scene.append(square([4,4,5], [0,0,1], 3., color_red))
 
 # Ne fonctionne pas (mauvais calcul des faces)
@@ -216,7 +221,7 @@ scene.append(sphere([2, 9.0, 2.5], 2, color_black, 1.))
 Screen = [8,12]
 Camera = np.array([Screen[0]/2,Screen[1]/2,-28])
 
-depth_max = 3 # Profondeur max de réflexion
+depth_max = 5 # Profondeur max de réflexion
 
 w = 400
 h = w*3//4
@@ -234,14 +239,16 @@ for i in range(h):
         depth = 0
         reflection = 1.
         O = Camera
+        trans = 0
 
         while depth < depth_max:
             tr = trace(O,ray)
             if not tr:
                 break
-            obj, M, N, col_ray, shadow_mod = tr
+            obj, M, N, col_ray, trans_r = tr
             depth += 1
-            col += reflection * col_ray
+            col += reflection * col_ray * (1-trans)
+            trans = trans_r
             ray = normalize(ray - 2 * np.dot(ray, N) * N)
             O = M + N * .0001
             reflection *= obj.get('reflection', 1.)
