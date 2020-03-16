@@ -67,7 +67,7 @@ def intersect_cube(l, l0, obj):
 def sphere(position, radius, color, reflection=.0):
     return dict(type='sphere', position=np.array(position), 
         radius=np.array(radius),
-        color=np.array(color), diffuse_c=.75, specular_c=.5, reflection=.0)
+        color=np.array(color), diffuse_c=.75, specular_c=.5, reflection=reflection)
 
 def plane(position, normal, color, reflection=.0):
     return dict(type='plane', position=np.array(position), 
