@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import fxaa
 
 
 
@@ -220,19 +220,19 @@ specular_c = 1.
 specular_k = 50
 
 scene = []
-scene.append(plane([0,0,25], [0,0,1], color_black, 1.0))
+scene.append(plane([0,0,25], [0,0,1], color_black, 0.0))
 scene.append(plane([0,0,-0], [0,0,-1], color_plane, 0.0))
-scene.append(plane([0,12,0], [0,1,0], color_black, 1.0))
-scene.append(plane([0,0,10], [0,-1,0], color_black, 1.0))
+scene.append(plane([0,12,0], [0,1,0], color_plane, 0.0))
+scene.append(plane([0,0,10], [0,-1,0], color_plane, 0.0))
 scene.append(plane([8,0,10], [1,0,0], color_plane))
 scene.append(plane([0,0,10], [-1,0,0], color_plane))
 scene.append(sphere([0.5, 3, 4.], .5, color_red))
-scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
-scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
-scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
-#scene.append(sphere([2.5, 8.0, 2.5], 2.5, color_white, 0.25, 1.))
-#scene.append(sphere([4.5, 2.5, 4.5], .7, color_orange, 0.))
-#scene.append(sphere([3.5, 5, 11.5], 3.5, color_gray, 1., 0.))
+#scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
+#scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
+#scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
+scene.append(sphere([2.5, 8.0, 2.5], 2.5, color_white, 0.25, 1.))
+scene.append(sphere([4.5, 2.5, 4.5], .7, color_orange, 0.))
+scene.append(sphere([3.5, 5, 11.5], 3.5, color_black, 1., 0.))
 #scene.append(sphere([1.0, 9, 10.0], 1.0, color_yellow, 0.5, 0.))
 
 #scene.append(square([4,4,5], [0,0,1], 3., color_red))
@@ -245,9 +245,9 @@ scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
 Screen = [8,12]
 Camera = np.array([Screen[0]/2,Screen[1]/2,-28])
 
-depth_max = 1 # Profondeur max de réflexion
+depth_max = 3 # Profondeur max de réflexion
 
-w = 400
+w = 800
 h = w*3//4
 
 img = np.zeros((h, w, 3))
@@ -300,55 +300,8 @@ for i in range(h):
 
 
 
-plt.imshow(Gimg)
-plt.show()
-
-
 #Zimg = Zimg / dmax
-Zimg = Zimg
-ZimgGrad0 = np.gradient(Zimg, axis=0)
-ZimgGrad1 = np.gradient(Zimg, axis=1)
-ZimgGradCut0 = np.absolute(ZimgGrad0)
-ZimgGradCut1 = np.absolute(ZimgGrad1)
-ZimgGradCut0 = ZimgGradCut0/np.amax(ZimgGradCut0)
-ZimgGradCut1 = ZimgGradCut1/np.amax(ZimgGradCut1)
-
-def blur0(A,i,j):
-    a11 = A[i-1,j-1,:]
-    a12 = A[i,j-1,:]
-    a13 = A[i+1,j-1,:]
-    a21 = A[i-1,j,:]
-    a22 = A[i,j,:]
-    a23 = A[i+1,j,:]
-    a31 = A[i-1,j+1,:]
-    a32 = A[i,j+1,:]
-    a33 = A[i+1,j+1,:]
-    return 0.025*(a11 + a12 + a13 + a31 + a32 + a33) + 0.15*(a21 + a23) + 0.5*a22
-
-
-def blur1(A,i,j):
-    a11 = A[i-1,j-1,:]
-    a12 = A[i,j-1,:]
-    a13 = A[i+1,j-1,:]
-    a21 = A[i-1,j,:]
-    a22 = A[i,j,:]
-    a23 = A[i+1,j,:]
-    a31 = A[i-1,j+1,:]
-    a32 = A[i,j+1,:]
-    a33 = A[i+1,j+1,:]
-    return 0.025*(a11 + a21 + a31 + a13 + a23 + a33) + 0.15*(a12 + a32) + 0.5*a22
-
-
-imgAliasing = img.copy()
-print("Aliasing:")
-for i in range(1,h-1):
-    print(100*i//h,"%")
-    for j in range(1,w-1):
-        imgAliasing[h-i-1, j, :] =  0.5*ZimgGradCut0[h-i-1][j] * blur0(img,h-i-1,j)
-        imgAliasing[h-i-1, j, :] +=  0.5*ZimgGradCut1[h-i-1][j] * blur1(img,h-i-1,j)
-        imgAliasing[h-i-1, j, :] +=  0.5*(1-ZimgGradCut1[h-i-1][j]) * img[h-i-1, j, :]
-        imgAliasing[h-i-1, j, :] +=  0.5*(1-ZimgGradCut0[h-i-1][j]) * img[h-i-1, j, :]
-        imgAliasing[h-i-1, j, :] = np.clip(imgAliasing[h-i-1, j, :], 0, 1)
+imgAliasing =  fxaa.onePass(img, Zimg, Rimg, Gimg, Bimg, h, w)
 
 
 
