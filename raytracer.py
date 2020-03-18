@@ -167,10 +167,10 @@ def trace(O, ray, rec=False, nbrec=0):
     trans = obj['transparent']*np.sqrt(abs(np.dot(N, ray)))
     col = ambient * (1-trans)
     # Lambert (diffuse).
-    col += obj.get('diffuse_c', diffuse_c) * abs(np.dot(N, toLight)) * color * (1-trans)
+    col += obj.get('diffuse_c', diffuse_c) * max(np.dot(N, toLight),0) * color * (1-trans)
 
     # Blinn-Phong (specular).
-    col += obj.get('specular_c', specular_c) * abs(np.dot(N, normalize(toLight + toOrigin))) ** specular_k * color_light
+    col += obj.get('specular_c', specular_c) * max(np.dot(N, normalize(toLight + toOrigin)),0) ** specular_k * color_light
 
     for i in range(0,1):
         if obj.get('reflection', 0.) > 0. and rec and nbrec < 6:
