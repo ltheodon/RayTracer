@@ -77,7 +77,8 @@ def onePass(img, Zimg, Rimg, Gimg, Bimg, h, w):
         a22 = A[i,j,:]
         a23 = A[i+1,j,:]
         a24 = A[i+2,j,:]
-        return 0.005*(a11+ a13 + a31 + a33) + 0.1*(a21 + a23) + 0.05*(a20 + a24) + 0.66*a22
+        #return 0.000*(a11+ a13 + a31 + a33) + 0.2*(a21 + a23) + 0.1*(a20 + a24) + 0.4*a22
+        return 0.2*(a21 + a23) + 0.1*(a20 + a24) + 0.4*a22
 
 
     def blur00(A,i,j):
@@ -90,23 +91,28 @@ def onePass(img, Zimg, Rimg, Gimg, Bimg, h, w):
         a22 = A[i,j,:]
         a32 = A[i,j+1,:]
         a42 = A[i,j+2,:]
-        return 0.005*(a11+ a13 + a31 + a33) + 0.1*(a12 + a32) + 0.05*(a02 + a42) + 0.66*a22
+        #return 0.000*(a11+ a13 + a31 + a33) + 0.2*(a12 + a32) + 0.1*(a02 + a42) + 0.4*a22
+        return 0.2*(a12 + a32) + 0.1*(a02 + a42) + 0.4*a22
 
 
-    imgAliasing = img.copy()
-    print("Aliasing:")
+
+    seuil = 0.0
+    imgAliasing = np.copy(img)
+    print("Anti-Aliasing:")
     for i in range(2,h-2):
         print(100*i//h,"%")
         for j in range(2,w-2):
-            if imgGradCut0[h-i-1][j] > 0:
-                if imgGradCut1[h-i-1][j] > 0:
+            if imgGradCut0[h-i-1][j] > seuil:
+                if imgGradCut1[h-i-1][j] > seuil:
                     den = (imgGradCut0[h-i-1][j] + imgGradCut1[h-i-1][j])
                     imgAliasing[h-i-1, j, :] = imgGradCut0[h-i-1][j] * blur00(img,h-i-1,j)
                     imgAliasing[h-i-1, j, :] += imgGradCut1[h-i-1][j] * blur11(img,h-i-1,j)
                     imgAliasing[h-i-1, j, :] = imgAliasing[h-i-1, j, :] / den
                 else:
                     imgAliasing[h-i-1, j, :] = imgGradCut0[h-i-1][j] * blur00(img,h-i-1,j)
-            elif imgGradCut1[h-i-1][j] > 0:
+                    imgAliasing[h-i-1, j, :] += (1-imgGradCut0[h-i-1][j]) * img[h-i-1, j, :]
+            elif imgGradCut1[h-i-1][j] > seuil:
                 imgAliasing[h-i-1, j, :] = imgGradCut1[h-i-1][j] * blur11(img,h-i-1,j)
+                imgAliasing[h-i-1, j, :] += (1-imgGradCut1[h-i-1][j]) * img[h-i-1, j, :]
             imgAliasing[h-i-1, j, :] = np.clip(imgAliasing[h-i-1, j, :], 0, 1)
     return imgAliasing

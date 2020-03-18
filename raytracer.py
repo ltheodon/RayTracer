@@ -72,7 +72,7 @@ def sphere(position, radius, color, reflection=.0, transparent=.0):
 def plane(position, normal, color, reflection=.0):
     return dict(type='plane', position=np.array(position), 
         normal=np.array(normal),
-        color=color, diffuse_c=.75, specular_c=.2, reflection=reflection, transparent=0.)
+        color=color, diffuse_c=.75, specular_c=.3, reflection=reflection, transparent=0.)
 
 def square(position, normal, length, color):
     return dict(type='square', position=np.array(position), 
@@ -165,7 +165,7 @@ def trace(O, ray, rec=False, nbrec=0):
         #print(shadow_mod)
     # Calcul des couleurs
     trans = obj['transparent']*np.sqrt(abs(np.dot(N, ray)))
-    col = ambient * (1-trans)
+    col = ambient * color * (1-trans)
     # Lambert (diffuse).
     col += obj.get('diffuse_c', diffuse_c) * max(np.dot(N, toLight),0) * color * (1-trans)
 
@@ -200,7 +200,7 @@ def trace(O, ray, rec=False, nbrec=0):
 
 
 #color_plane = np.array([0.7, 0.01, 0.02])
-color_plane = np.array([0.05, 0.01, 0.4])
+color_plane = np.array([0.35, 0.25, 0.9])
 color_red = np.array([1., 0.01, 0.01])
 color_orange = np.array([0.88, 0.43, 0.08])
 color_blue = np.array([0., 0.00, 1.])
@@ -211,29 +211,29 @@ color_white = np.array([1., 1., 1.])
 color_gray = np.array([0.25, 0.25, 0.25])
 
 
-Light = np.array([6.5, 4., -0.])
+Light = np.array([6.5, 5., -0.])
 color_light = np.ones(3)
 
-ambient = .15
+ambient = .35
 diffuse_c = 1.
 specular_c = 1.
 specular_k = 50
 
 scene = []
-scene.append(plane([0,0,25], [0,0,1], color_black, 0.0))
+scene.append(plane([0,0,25], [0,0,1], color_plane, 0.5))
 scene.append(plane([0,0,-0], [0,0,-1], color_plane, 0.0))
 scene.append(plane([0,12,0], [0,1,0], color_plane, 0.0))
 scene.append(plane([0,0,10], [0,-1,0], color_plane, 0.0))
 scene.append(plane([8,0,10], [1,0,0], color_plane))
 scene.append(plane([0,0,10], [-1,0,0], color_plane))
 scene.append(sphere([0.5, 3, 4.], .5, color_red))
-#scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
-#scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
-#scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
+scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
+scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
+scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
 scene.append(sphere([2.5, 8.0, 2.5], 2.5, color_white, 0.25, 1.))
 scene.append(sphere([4.5, 2.5, 4.5], .7, color_orange, 0.))
 scene.append(sphere([3.5, 5, 11.5], 3.5, color_black, 1., 0.))
-#scene.append(sphere([1.0, 9, 10.0], 1.0, color_yellow, 0.5, 0.))
+scene.append(sphere([1.0, 9, 10.0], 1.0, color_yellow, 0.5, 0.))
 
 #scene.append(square([4,4,5], [0,0,1], 3., color_red))
 
@@ -245,7 +245,7 @@ scene.append(sphere([3.5, 5, 11.5], 3.5, color_black, 1., 0.))
 Screen = [8,12]
 Camera = np.array([Screen[0]/2,Screen[1]/2,-28])
 
-depth_max = 3 # Profondeur max de réflexion
+depth_max = 4 # Profondeur max de réflexion
 
 w = 800
 h = w*3//4
