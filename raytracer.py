@@ -227,13 +227,13 @@ scene.append(plane([0,0,10], [0,-1,0], color_plane, 0.0))
 scene.append(plane([8,0,10], [1,0,0], color_plane))
 scene.append(plane([0,0,10], [-1,0,0], color_plane))
 scene.append(sphere([0.5, 3, 4.], .5, color_red))
-scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
-scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
+#scene.append(sphere([1, 6.0, 5.5], 1., color_green, 0.85, 0.99))
+#scene.append(sphere([1.5, 3.5, 7.0], 1.2, color_yellow, 0.85, 0.5))
 scene.append(sphere([2.2, 4.8, 5.0], 0.6, color_blue))
 scene.append(sphere([2.5, 8.0, 2.5], 2.5, color_white, 0.25, 1.))
-scene.append(sphere([4.5, 2.5, 4.5], .7, color_orange, 0.))
+#scene.append(sphere([4.5, 2.5, 4.5], .7, color_orange, 0.))
 scene.append(sphere([3.5, 5, 11.5], 3.5, color_black, 1., 0.))
-scene.append(sphere([1.0, 9, 10.0], 1.0, color_yellow, 0.5, 0.))
+#scene.append(sphere([1.0, 9, 10.0], 1.0, color_yellow, 0.5, 0.))
 
 #scene.append(square([4,4,5], [0,0,1], 3., color_red))
 
@@ -247,11 +247,12 @@ Camera = np.array([Screen[0]/2,Screen[1]/2,-28])
 
 depth_max = 4 # Profondeur max de réflexion
 
-w = 800
+w = 100
 h = w*3//4
 
 img = np.zeros((h, w, 3))
 Zimg = np.zeros((h, w, 1))
+Zimg2 = np.zeros((h, w, 3))
 Rimg = np.zeros((h, w, 1))
 Gimg = np.zeros((h, w, 1))
 Bimg = np.zeros((h, w, 1))
@@ -269,7 +270,7 @@ for i in range(h):
         reflection = 1.
         O = Camera
         trans = 0
-        d = np.array([0.,0.,0.])
+        #d = np.array([0.,0.,0.])
 
         while depth < depth_max:
             tr = trace(O,ray)
@@ -292,6 +293,8 @@ for i in range(h):
         #print(col)
         img[h-i-1, j, :] =  np.clip(col, 0, 1)
         Zimg[h-i-1, j, :] =  d
+        #Zimg2[h-i-1, j, :] =  (d-25)*np.array([1.,1.,1.])
+        Zimg2[h-i-1, j, :] =  d*np.array([1.,1.,1.])
         Rimg[h-i-1, j, :] =  img[h-i-1, j, 0]
         Gimg[h-i-1, j, :] =  img[h-i-1, j, 1]
         Bimg[h-i-1, j, :] =  img[h-i-1, j, 2]
@@ -299,9 +302,14 @@ for i in range(h):
         #img[i, j, :] =  np.clip(col, 0, 1)
 
 
+Zimg2 = np.clip(2*(Zimg2-dmax/2)/dmax, 0, 1)
+
+
+
 
 #Zimg = Zimg / dmax
-imgAliasing =  fxaa.onePass(img, Zimg, Rimg, Gimg, Bimg, h, w)
+
+#imgAliasing =  fxaa.onePass(img, Zimg, Rimg, Gimg, Bimg, h, w)
 
 
 
@@ -313,13 +321,15 @@ imgAliasing =  fxaa.onePass(img, Zimg, Rimg, Gimg, Bimg, h, w)
 #    for j in range(w):
 #        img[h-i-1, j, :] = [0,0,0]
 
-print(Zimg)
+#print(Zimg)
 
 
 plt.imsave('fig.png', img)
-plt.imsave('figA.png', imgAliasing)
+#plt.imsave('figA.png', imgAliasing)
 plt.imshow(img)
 plt.show()
 #plt.show()
-plt.imshow(imgAliasing)
+#plt.imshow(imgAliasing)
+#plt.show()
+plt.imshow(Zimg2)
 plt.show()
